@@ -7,6 +7,45 @@ const hassLocalStorageDefaults = {
   selectedTheme: `{"dark": false}`,
 };
 
+// From https://www.bannerbear.com/blog/ways-to-speed-up-puppeteer-screenshots/
+const puppeteerArgs = [
+  "--autoplay-policy=user-gesture-required",
+  "--disable-background-networking",
+  "--disable-background-timer-throttling",
+  "--disable-backgrounding-occluded-windows",
+  "--disable-breakpad",
+  "--disable-client-side-phishing-detection",
+  "--disable-component-update",
+  "--disable-default-apps",
+  "--disable-dev-shm-usage",
+  "--disable-domain-reliability",
+  "--disable-extensions",
+  "--disable-features=AudioServiceOutOfProcess",
+  "--disable-hang-monitor",
+  "--disable-ipc-flooding-protection",
+  "--disable-notifications",
+  "--disable-offer-store-unmasked-wallet-cards",
+  "--disable-popup-blocking",
+  "--disable-print-preview",
+  "--disable-prompt-on-repost",
+  "--disable-renderer-backgrounding",
+  "--disable-setuid-sandbox",
+  "--disable-speech-api",
+  "--disable-sync",
+  "--hide-scrollbars",
+  "--ignore-gpu-blacklist",
+  "--metrics-recording-only",
+  "--mute-audio",
+  "--no-default-browser-check",
+  "--no-first-run",
+  "--no-pings",
+  "--no-sandbox",
+  "--no-zygote",
+  "--password-store=basic",
+  "--use-gl=swiftshader",
+  "--use-mock-keychain",
+];
+
 export class Browser {
   browser = undefined;
   page = undefined;
@@ -54,40 +93,41 @@ export class Browser {
         ? {
             headless: "shell",
             executablePath: "/usr/bin/chromium",
-            args: ["--disable-dev-shm-usage", "--no-sandbox"],
+            args: puppeteerArgs,
           }
         : {
             headless: "shell",
             executablePath:
               "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            args: puppeteerArgs,
           },
     );
     this.page = await this.browser.newPage();
 
     // Route all log messages from browser to our add-on log
     // https://pptr.dev/api/puppeteer.pageevents
+    this.page
+      .on("console", (message) =>
+        console.log(
+          `CONSOLE ${message
+            .type()
+            .substr(0, 3)
+            .toUpperCase()} ${message.text()}`,
+        ),
+      )
+      .on("error", (err) => console.error("ERROR", err))
+      .on("pageerror", ({ message }) => console.log("PAGE ERROR", message))
+      .on("requestfailed", (request) =>
+        console.log(
+          `REQUEST-FAILED ${request.failure().errorText} ${request.url()}`,
+        ),
+      );
     if (debug)
-      this.page
-        .on("console", (message) =>
-          console.log(
-            `CONSOLE ${message
-              .type()
-              .substr(0, 3)
-              .toUpperCase()} ${message.text()}`,
-          ),
-        )
-        .on("error", (err) => console.error("ERROR", err))
-        .on("pageerror", ({ message }) => console.log("PAGE ERROR", message))
-        .on("response", (response) =>
-          console.log(
-            `RESPONSE ${response.status()} ${response.url()} (cache: ${response.fromCache()})`,
-          ),
-        )
-        .on("requestfailed", (request) =>
-          console.log(
-            `REQUEST-FAILED ${request.failure().errorText} ${request.url()}`,
-          ),
-        );
+      this.page.on("response", (response) =>
+        console.log(
+          `RESPONSE ${response.status()} ${response.url()} (cache: ${response.fromCache()})`,
+        ),
+      );
 
     const clientId = new URL("/", this.homeAssistantUrl).toString(); // http://homeassistant.local:8123/
     const hassUrl = clientId.substring(0, clientId.length - 1); // http://homeassistant.local:8123
@@ -150,7 +190,14 @@ export class Browser {
             const panelResolver = mainEl.shadowRoot.querySelector(
               "partial-panel-resolver",
             );
-            return panelResolver && !panelResolver._loading;
+            if (!panelResolver || panelResolver._loading) {
+              return false;
+            }
+
+            const panel = panelResolver.children[0];
+            if (!panel) return false;
+
+            return !("_loading" in panel) || !panel._loading;
           },
           {
             timeout: 20000,
