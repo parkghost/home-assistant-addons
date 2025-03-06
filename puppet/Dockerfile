@@ -35,7 +35,7 @@ WORKDIR /app
 COPY ha-puppet/package*.json ./
 
 # Ensure a clean state before installing
-RUN npm install --unsafe-perm
+RUN npm ci --unsafe-perm
 
 # Copy the rest of the project files
 COPY ha-puppet/ .
