@@ -1,4 +1,4 @@
 {
-  "hassUrl": "http://localhost:8123",
-  "hassToken": "YOUR-LONG-LIVED-ACCESS-TOKEN"
+  "home_assistant_url": "http://localhost:8123",
+  "access_token": "YOUR-LONG-LIVED-ACCESS-TOKEN"
 }
