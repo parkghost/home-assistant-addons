@@ -1,0 +1,4 @@
+{
+  "hassUrl": "http://localhost:8123",
+  "hassToken": "YOUR-LONG-LIVED-ACCESS-TOKEN"
+}

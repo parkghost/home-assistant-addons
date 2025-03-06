@@ -1,7 +1,8 @@
 import http from "node:http";
-import { screenshotHomeAssistant } from "./screenshot.js";
+import { Browser } from "./screenshot.js";
+import { isAddOn, hassUrl, hassToken } from "./const.js";
 
-const handler = async (request, response, { homeAssistantUrl }) => {
+const handler = async (request, response, { browser }) => {
   console.debug("Handling", request.url);
   if (request.url === "/favicon.ico") {
     response.statusCode = 404;
@@ -26,11 +27,10 @@ const handler = async (request, response, { homeAssistantUrl }) => {
     }
   }
 
-  const pageUrl = new URL(requestUrl.pathname, homeAssistantUrl).toString();
   let image;
   try {
-    image = await screenshotHomeAssistant({
-      pageUrl,
+    image = await browser.screenshotHomeAssistant({
+      pagePath: requestUrl.pathname,
       viewport: { width: viewportParams[0], height: viewportParams[1] },
     });
   } catch (err) {
@@ -47,14 +47,18 @@ const handler = async (request, response, { homeAssistantUrl }) => {
   response.end();
 };
 
+const browser = new Browser(hassUrl, hassToken);
 const port = 10000;
 const server = http.createServer((request, response) =>
   handler(request, response, {
-    homeAssistantUrl: "http://homeassistant:8123",
+    browser,
   }),
 );
 server.listen(port);
 const now = new Date();
+const serverUrl = isAddOn
+  ? `http://homeassistant.local:${port}`
+  : `http://localhost:${port}`;
 console.log(
-  `[${now.getHours()}:${now.getMinutes()}] Visit server at http://homeassistant.local:${port}/lovelace/0?viewport=1000x1000`,
+  `[${now.getHours()}:${now.getMinutes()}] Visit server at ${serverUrl}/lovelace/0?viewport=1000x1000`,
 );
