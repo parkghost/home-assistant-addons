@@ -2,6 +2,8 @@ import http from "node:http";
 import { Browser } from "./screenshot.js";
 import { isAddOn, hassUrl, hassToken } from "./const.js";
 
+const DEFAULT_WAIT = isAddOn ? 2500 : 500;
+
 const handler = async (request, response, { browser }) => {
   console.debug("Handling", request.url);
   if (request.url === "/favicon.ico") {
@@ -17,7 +19,7 @@ const handler = async (request, response, { browser }) => {
 
   let extraWait = parseInt(requestUrl.searchParams.get("wait"));
   if (isNaN(extraWait)) {
-    extraWait = isAddOn ? 2000 : 500;
+    extraWait = DEFAULT_WAIT;
   }
   const viewportParams = (requestUrl.searchParams.get("viewport") || "").split(
     "x",
