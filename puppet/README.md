@@ -10,12 +10,18 @@ _This is a prototype, there is NO security. Anyone can access the server and mak
 
 ## Usage
 
-Starting the add-on will launch a new server on port 10000. Any path you request will return a screenshot of that page.
+Starting the add-on will launch a new server on port 10000. Any path you request will return a screenshot of that page. You will need to specify the viewport size you want.
 
 For example, to get a 1000px x 1000px screenshot of your default dashboard, fetch:
 
 ```
 http://homeassistant.local:10000/lovelace/0?viewport=1000x1000
+```
+
+By default, the server will wait for 2 seconds after the loading is considered done, to give things that are not tracked by loading spinners to load (ie icons, pictures). You can control this wait time by adding a `wait` query parameter. For example, to wait 10 seconds:
+
+```
+http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&wait=10000
 ```
 
 ## Optimizations

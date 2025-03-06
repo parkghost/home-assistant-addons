@@ -15,6 +15,10 @@ const handler = async (request, response, { browser }) => {
     "http://localhost",
   );
 
+  let extraWait = parseInt(requestUrl.searchParams.get("wait"));
+  if (isNaN(extraWait)) {
+    extraWait = isAddOn ? 2000 : 500;
+  }
   const viewportParams = (requestUrl.searchParams.get("viewport") || "").split(
     "x",
   );
@@ -32,6 +36,7 @@ const handler = async (request, response, { browser }) => {
     image = await browser.screenshotHomeAssistant({
       pagePath: requestUrl.pathname,
       viewport: { width: viewportParams[0], height: viewportParams[1] },
+      extraWait,
     });
   } catch (err) {
     console.error("Error generating screenshot", err);

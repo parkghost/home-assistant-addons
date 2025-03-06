@@ -161,7 +161,7 @@ export class Browser {
     return this.page;
   }
 
-  async screenshotHomeAssistant({ pagePath, viewport }) {
+  async screenshotHomeAssistant({ pagePath, viewport, extraWait }) {
     let start = new Date();
     if (this.busy) {
       console.log("Busy, waiting in queue");
@@ -185,9 +185,11 @@ export class Browser {
           () => {
             const haEl = document.querySelector("home-assistant");
             if (!haEl) return false;
-            const mainEl = haEl.shadowRoot.querySelector("home-assistant-main");
+            const mainEl = haEl.shadowRoot?.querySelector(
+              "home-assistant-main",
+            );
             if (!mainEl) return false;
-            const panelResolver = mainEl.shadowRoot.querySelector(
+            const panelResolver = mainEl.shadowRoot?.querySelector(
               "partial-panel-resolver",
             );
             if (!panelResolver || panelResolver._loading) {
@@ -201,6 +203,7 @@ export class Browser {
           },
           {
             timeout: 20000,
+            polling: 100,
           },
         );
       } catch (err) {
@@ -209,7 +212,9 @@ export class Browser {
 
       // wait for the work to be done.
       // Not sure yet how to decide that?
-      await new Promise((resolve) => setTimeout(resolve, isAddOn ? 1500 : 500));
+      if (extraWait) {
+        await new Promise((resolve) => setTimeout(resolve, extraWait));
+      }
 
       const image = await page.screenshot();
 
