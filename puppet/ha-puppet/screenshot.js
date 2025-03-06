@@ -49,12 +49,19 @@ export class Browser {
     }
 
     console.log("Starting browser");
-    this.browser = await puppeteer.launch({
-      headless: "shell",
-      executablePath: isAddOn
-        ? "/usr/bin/chromium"
-        : "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    });
+    this.browser = await puppeteer.launch(
+      isAddOn
+        ? {
+            headless: "shell",
+            executablePath: "/usr/bin/chromium",
+            args: ["--disable-dev-shm-usage", "--no-sandbox"],
+          }
+        : {
+            headless: "shell",
+            executablePath:
+              "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+          },
+    );
     this.page = await this.browser.newPage();
 
     // Route all log messages from browser to our add-on log
