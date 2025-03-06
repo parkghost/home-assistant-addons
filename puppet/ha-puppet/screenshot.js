@@ -132,10 +132,12 @@ export class Browser {
     const clientId = new URL("/", this.homeAssistantUrl).toString(); // http://homeassistant.local:8123/
     const hassUrl = clientId.substring(0, clientId.length - 1); // http://homeassistant.local:8123
 
+    // Open a lightweight page to set local storage
+    await this.page.goto(`${hassUrl}/robots.txt`);
+
     // Store access token in local storage when page is opened
-    await this.page.evaluateOnNewDocument(
+    await this.page.evaluate(
       (hassUrl, clientId, token, hassLocalStorage) => {
-        console.log("Initializing local storage");
         for (const [key, value] of Object.entries(hassLocalStorage)) {
           localStorage.setItem(key, value);
         }
