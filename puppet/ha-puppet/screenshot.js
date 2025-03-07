@@ -180,6 +180,10 @@ export class Browser {
 
     try {
       const page = await this.getPage();
+
+      // We add 56px to the height to account for the header
+      // We'll cut that off from the screenshot
+      viewport.height += 56;
       await page.setViewport(viewport);
 
       let defaultWait = isAddOn ? 750 : 500;
@@ -247,7 +251,14 @@ export class Browser {
         await new Promise((resolve) => setTimeout(resolve, extraWait));
       }
 
-      const image = await page.screenshot();
+      const image = await page.screenshot({
+        clip: {
+          x: 0,
+          y: 56,
+          width: viewport.width,
+          height: viewport.height - 56,
+        },
+      });
 
       const end = Date.now();
       console.log(`Screenshot time: ${end - start} ms`);
