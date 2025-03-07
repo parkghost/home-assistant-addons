@@ -49,6 +49,7 @@ const handler = async (request, response, { browser }) => {
 
   response.writeHead(200, {
     "Content-Type": "image/png",
+    "Content-Length": image.length,
   });
   response.write(image);
   response.end();
