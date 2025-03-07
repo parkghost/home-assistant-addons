@@ -18,3 +18,8 @@ export const hassUrl = isAddOn
   : options.home_assistant_url;
 export const hassToken = options.access_token;
 export const debug = false;
+
+if (!hassToken) {
+  console.error("No access token found. Please set the access token");
+  process.exit(1);
+}
