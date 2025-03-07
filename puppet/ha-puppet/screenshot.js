@@ -107,6 +107,10 @@ export class Browser {
     // Route all log messages from browser to our add-on log
     // https://pptr.dev/api/puppeteer.pageevents
     this.page
+      .on("framenavigated", (frame) =>
+        // Why are we seeing so many frame navigated ??
+        console.log("Frame navigated", frame.url()),
+      )
       .on("console", (message) =>
         console.log(
           `CONSOLE ${message
@@ -178,8 +182,23 @@ export class Browser {
       const page = await this.getPage();
       await page.setViewport(viewport);
 
-      const pageUrl = new URL(pagePath, this.homeAssistantUrl).toString();
-      await page.goto(pageUrl);
+      // If we're still on robots.txt, open HA UI
+      if (page.url().endsWith("/robots.txt")) {
+        const pageUrl = new URL(pagePath, this.homeAssistantUrl).toString();
+        await page.goto(pageUrl);
+      } else {
+        // mimick navitate function from frontend
+        await page.evaluate((pagePath) => {
+          history.replaceState(
+            history.state?.root ? { root: true } : null,
+            "",
+            pagePath,
+          );
+          const event = new Event("location-changed");
+          event.detail = { replace: true };
+          window.dispatchEvent(event);
+        }, pagePath);
+      }
 
       try {
         // Wait for the page to be loaded.
