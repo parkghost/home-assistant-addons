@@ -182,12 +182,19 @@ export class Browser {
       const page = await this.getPage();
       await page.setViewport(viewport);
 
-      // If we're still on robots.txt, open HA UI
+      let defaultWait = isAddOn ? 750 : 500;
+
+      // If we're still on robots.txt, navigate to HA UI
       if (page.url().endsWith("/robots.txt")) {
         const pageUrl = new URL(pagePath, this.homeAssistantUrl).toString();
         await page.goto(pageUrl);
+
+        // Launching browser is slow in add-on, give it extra time
+        if (isAddOn) {
+          defaultWait += 1750;
+        }
       } else {
-        // mimick navitate function from frontend
+        // mimick HA frontend navigation (no full reload)
         await page.evaluate((pagePath) => {
           history.replaceState(
             history.state?.root ? { root: true } : null,
@@ -233,6 +240,9 @@ export class Browser {
 
       // wait for the work to be done.
       // Not sure yet how to decide that?
+      if (extraWait === undefined) {
+        extraWait = defaultWait;
+      }
       if (extraWait) {
         await new Promise((resolve) => setTimeout(resolve, extraWait));
       }
