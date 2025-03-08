@@ -232,7 +232,7 @@ export class Browser {
             return !("_loading" in panel) || !panel._loading;
           },
           {
-            timeout: 20000,
+            timeout: 10000,
             polling: 100,
           },
         );
