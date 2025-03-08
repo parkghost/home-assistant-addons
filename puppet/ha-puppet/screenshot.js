@@ -75,12 +75,14 @@ export class Browser {
 
     this.busy = true;
     try {
-      const page = this.page;
-      const browser = this.browser;
-      this.page = undefined;
-      this.browser = undefined;
-      await page.close();
-      await browser.close();
+      if (this.page) {
+        await this.page.close();
+        this.page = undefined;
+      }
+      if (this.browser) {
+        await this.browser.close();
+        this.browser = undefined;
+      }
       console.log("Closed browser");
     } finally {
       this.busy = false;
@@ -100,6 +102,7 @@ export class Browser {
         : "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
       args: puppeteerArgs,
     });
+    setTimeout(() => this.cleanup(), this.TIMEOUT);
     this.page = await this.browser.newPage();
 
     // Route all log messages from browser to our add-on log
@@ -161,7 +164,6 @@ export class Browser {
       this.token,
       hassLocalStorageDefaults,
     );
-    setTimeout(() => this.cleanup(), this.TIMEOUT);
     return this.page;
   }
 
