@@ -93,20 +93,13 @@ export class Browser {
     }
 
     console.log("Starting browser");
-    this.browser = await puppeteer.launch(
-      isAddOn
-        ? {
-            headless: "shell",
-            executablePath: "/usr/bin/chromium",
-            args: puppeteerArgs,
-          }
-        : {
-            headless: "shell",
-            executablePath:
-              "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-            args: puppeteerArgs,
-          },
-    );
+    this.browser = await puppeteer.launch({
+      headless: "shell",
+      executablePath: isAddOn
+        ? "/usr/bin/chromium"
+        : "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      args: puppeteerArgs,
+    });
     this.page = await this.browser.newPage();
 
     // Route all log messages from browser to our add-on log
@@ -198,7 +191,7 @@ export class Browser {
         const pageUrl = new URL(pagePath, this.homeAssistantUrl).toString();
         await page.goto(pageUrl);
 
-        // Launching browser is slow in add-on, give it extra time
+        // Launching browser is slow inside the add-on, give it extra time
         if (isAddOn) {
           defaultWait += 2000;
         }
