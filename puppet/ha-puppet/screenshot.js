@@ -45,6 +45,9 @@ const puppeteerArgs = [
   "--use-gl=swiftshader",
   "--use-mock-keychain",
 ];
+if (isAddOn) {
+  puppeteerArgs.push("--enable-low-end-device-mode");
+}
 
 export class Browser {
   browser = undefined;
