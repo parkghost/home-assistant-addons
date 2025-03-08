@@ -200,7 +200,7 @@ export class Browser {
 
         // Launching browser is slow in add-on, give it extra time
         if (isAddOn) {
-          defaultWait += 1750;
+          defaultWait += 2000;
         }
       } else {
         // mimick HA frontend navigation (no full reload)
