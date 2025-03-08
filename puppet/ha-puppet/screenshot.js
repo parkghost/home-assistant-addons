@@ -94,76 +94,93 @@ export class Browser {
       return this.page;
     }
 
-    console.log("Starting browser");
-    this.browser = await puppeteer.launch({
-      headless: "shell",
-      executablePath: isAddOn
-        ? "/usr/bin/chromium"
-        : "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-      args: puppeteerArgs,
-    });
-    setTimeout(() => this.cleanup(), this.TIMEOUT);
-    this.page = await this.browser.newPage();
+    let browser;
+    let page;
 
-    // Route all log messages from browser to our add-on log
-    // https://pptr.dev/api/puppeteer.pageevents
-    this.page
-      .on("framenavigated", (frame) =>
-        // Why are we seeing so many frame navigated ??
-        console.log("Frame navigated", frame.url()),
-      )
-      .on("console", (message) =>
-        console.log(
-          `CONSOLE ${message
-            .type()
-            .substr(0, 3)
-            .toUpperCase()} ${message.text()}`,
-        ),
-      )
-      .on("error", (err) => console.error("ERROR", err))
-      .on("pageerror", ({ message }) => console.log("PAGE ERROR", message))
-      .on("requestfailed", (request) =>
-        console.log(
-          `REQUEST-FAILED ${request.failure().errorText} ${request.url()}`,
-        ),
-      );
-    if (debug)
-      this.page.on("response", (response) =>
-        console.log(
-          `RESPONSE ${response.status()} ${response.url()} (cache: ${response.fromCache()})`,
-        ),
-      );
+    try {
+      console.log("Starting browser");
+      browser = await puppeteer.launch({
+        headless: "shell",
+        executablePath: isAddOn
+          ? "/usr/bin/chromium"
+          : "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        args: puppeteerArgs,
+      });
+      setTimeout(() => this.cleanup(), this.TIMEOUT);
+      page = await browser.newPage();
 
-    const clientId = new URL("/", this.homeAssistantUrl).toString(); // http://homeassistant.local:8123/
-    const hassUrl = clientId.substring(0, clientId.length - 1); // http://homeassistant.local:8123
-
-    // Open a lightweight page to set local storage
-    await this.page.goto(`${hassUrl}/robots.txt`);
-
-    // Store access token in local storage when page is opened
-    await this.page.evaluate(
-      (hassUrl, clientId, token, hassLocalStorage) => {
-        for (const [key, value] of Object.entries(hassLocalStorage)) {
-          localStorage.setItem(key, value);
-        }
-        localStorage.setItem(
-          "hassTokens",
-          JSON.stringify({
-            access_token: token,
-            token_type: "Bearer",
-            expires_in: 1800,
-            hassUrl,
-            clientId,
-            expires: 9999999999999,
-            refresh_token: "",
-          }),
+      // Route all log messages from browser to our add-on log
+      // https://pptr.dev/api/puppeteer.pageevents
+      page
+        .on("framenavigated", (frame) =>
+          // Why are we seeing so many frame navigated ??
+          console.log("Frame navigated", frame.url()),
+        )
+        .on("console", (message) =>
+          console.log(
+            `CONSOLE ${message
+              .type()
+              .substr(0, 3)
+              .toUpperCase()} ${message.text()}`,
+          ),
+        )
+        .on("error", (err) => console.error("ERROR", err))
+        .on("pageerror", ({ message }) => console.log("PAGE ERROR", message))
+        .on("requestfailed", (request) =>
+          console.log(
+            `REQUEST-FAILED ${request.failure().errorText} ${request.url()}`,
+          ),
         );
-      },
-      hassUrl,
-      clientId,
-      this.token,
-      hassLocalStorageDefaults,
-    );
+      if (debug)
+        page.on("response", (response) =>
+          console.log(
+            `RESPONSE ${response.status()} ${response.url()} (cache: ${response.fromCache()})`,
+          ),
+        );
+
+      const clientId = new URL("/", this.homeAssistantUrl).toString(); // http://homeassistant.local:8123/
+      const hassUrl = clientId.substring(0, clientId.length - 1); // http://homeassistant.local:8123
+
+      // Open a lightweight page to set local storage
+      await page.goto(`${hassUrl}/robots.txt`);
+
+      // Store access token in local storage when page is opened
+      await page.evaluate(
+        (hassUrl, clientId, token, hassLocalStorage) => {
+          for (const [key, value] of Object.entries(hassLocalStorage)) {
+            localStorage.setItem(key, value);
+          }
+          localStorage.setItem(
+            "hassTokens",
+            JSON.stringify({
+              access_token: token,
+              token_type: "Bearer",
+              expires_in: 1800,
+              hassUrl,
+              clientId,
+              expires: 9999999999999,
+              refresh_token: "",
+            }),
+          );
+        },
+        hassUrl,
+        clientId,
+        this.token,
+        hassLocalStorageDefaults,
+      );
+    } catch (err) {
+      console.error("Error starting browser", err);
+      if (page) {
+        await page.close();
+      }
+      if (browser) {
+        await browser.close();
+      }
+      throw new Error("Error starting browser");
+    }
+
+    this.browser = browser;
+    this.page = page;
     return this.page;
   }
 
