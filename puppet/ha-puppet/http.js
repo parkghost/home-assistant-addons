@@ -19,16 +19,13 @@ const handler = async (request, response, { browser }) => {
   if (isNaN(extraWait)) {
     extraWait = undefined;
   }
-  const viewportParams = (requestUrl.searchParams.get("viewport") || "").split(
-    "x",
-  );
-  for (let i = 0; i < 2; i++) {
-    try {
-      viewportParams[i] = parseInt(viewportParams[i]);
-    } catch (err) {
-      response.statusCode = 400;
-      response.end();
-    }
+  const viewportParams = (requestUrl.searchParams.get("viewport") || "")
+    .split("x")
+    .map((n) => parseInt(n));
+  if (viewportParams.length != 2 || !viewportParams.every((x) => !isNaN(x))) {
+    response.statusCode = 400;
+    response.end();
+    return;
   }
 
   let image;
@@ -66,5 +63,5 @@ const serverUrl = isAddOn
   ? `http://homeassistant.local:${port}`
   : `http://localhost:${port}`;
 console.log(
-  `[${now.getHours()}:${now.getMinutes()}] Visit server at ${serverUrl}/lovelace/0?viewport=1000x1000`,
+  `[${now.toLocaleTimeString()}] Visit server at ${serverUrl}/lovelace/0?viewport=1000x1000`,
 );
