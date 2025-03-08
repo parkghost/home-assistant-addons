@@ -1,6 +1,8 @@
 import puppeteer from "puppeteer";
 import { debug, isAddOn } from "./const.js";
 
+const HEADER_HEIGHT = 56;
+
 // These are JSON stringified values
 const hassLocalStorageDefaults = {
   dockedSidebar: `"always_hidden"`,
@@ -186,7 +188,7 @@ export class Browser {
 
       // We add 56px to the height to account for the header
       // We'll cut that off from the screenshot
-      viewport.height += 56;
+      viewport.height += HEADER_HEIGHT;
       await page.setViewport(viewport);
 
       let defaultWait = isAddOn ? 750 : 500;
@@ -257,9 +259,9 @@ export class Browser {
       const image = await page.screenshot({
         clip: {
           x: 0,
-          y: 56,
+          y: HEADER_HEIGHT,
           width: viewport.width,
-          height: viewport.height - 56,
+          height: viewport.height - HEADER_HEIGHT,
         },
       });
 
