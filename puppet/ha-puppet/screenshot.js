@@ -201,7 +201,16 @@ export class Browser {
       // We add 56px to the height to account for the header
       // We'll cut that off from the screenshot
       viewport.height += HEADER_HEIGHT;
-      await page.setViewport(viewport);
+
+      const curViewport = page.viewport();
+
+      if (
+        !curViewport ||
+        curViewport.width !== viewport.width ||
+        curViewport.height !== viewport.height
+      ) {
+        await page.setViewport(viewport);
+      }
 
       let defaultWait = isAddOn ? 750 : 500;
 
