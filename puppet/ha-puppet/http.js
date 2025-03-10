@@ -1,6 +1,7 @@
 import http from "node:http";
 import { Browser } from "./screenshot.js";
 import { isAddOn, hassUrl, hassToken } from "./const.js";
+import { CannotOpenPageError } from "./error.js";
 
 const handler = async (request, response, { browser }) => {
   console.debug("Handling", request.url);
@@ -37,7 +38,7 @@ const handler = async (request, response, { browser }) => {
     });
   } catch (err) {
     console.error("Error generating screenshot", err);
-    response.statusCode = 500;
+    response.statusCode = err instanceof CannotOpenPageError ? err.status : 500;
     response.end();
     return;
   }

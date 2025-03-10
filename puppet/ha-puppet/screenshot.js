@@ -1,5 +1,6 @@
 import puppeteer from "puppeteer";
 import { debug, isAddOn } from "./const.js";
+import { CannotOpenPageError } from "./error.js";
 
 const HEADER_HEIGHT = 56;
 
@@ -220,7 +221,10 @@ export class Browser {
 
         // Open the HA UI
         const pageUrl = new URL(pagePath, this.homeAssistantUrl).toString();
-        await page.goto(pageUrl);
+        const response = await page.goto(pageUrl);
+        if (!response.ok()) {
+          throw new CannotOpenPageError(response.status(), pageUrl);
+        }
         page.removeScriptToEvaluateOnNewDocument(evaluateIdentifier.identifier);
 
         // Launching browser is slow inside the add-on, give it extra time
@@ -243,6 +247,8 @@ export class Browser {
         // We are already on the correct page
         defaultWait = 0;
       }
+
+      this.lastRequestedPath = pagePath;
 
       // Wait for the page to be loaded.
       try {
@@ -295,7 +301,6 @@ export class Browser {
 
       const end = Date.now();
       console.log(`Screenshot time: ${end - start} ms`);
-      this.lastRequestedPath = pagePath;
       return image;
     } catch (err) {
       // trigger a full page navigation on next request
