@@ -137,37 +137,6 @@ export class Browser {
             `RESPONSE ${response.status()} ${response.url()} (cache: ${response.fromCache()})`,
           ),
         );
-
-      const clientId = new URL("/", this.homeAssistantUrl).toString(); // http://homeassistant.local:8123/
-      const hassUrl = clientId.substring(0, clientId.length - 1); // http://homeassistant.local:8123
-
-      // Open a lightweight page to set local storage
-      await page.goto(`${hassUrl}/robots.txt`);
-
-      // Store access token in local storage when page is opened
-      await page.evaluate(
-        (hassUrl, clientId, token, hassLocalStorage) => {
-          for (const [key, value] of Object.entries(hassLocalStorage)) {
-            localStorage.setItem(key, value);
-          }
-          localStorage.setItem(
-            "hassTokens",
-            JSON.stringify({
-              access_token: token,
-              token_type: "Bearer",
-              expires_in: 1800,
-              hassUrl,
-              clientId,
-              expires: 9999999999999,
-              refresh_token: "",
-            }),
-          );
-        },
-        hassUrl,
-        clientId,
-        this.token,
-        hassLocalStorageDefaults,
-      );
     } catch (err) {
       console.error("Error starting browser", err);
       if (page) {
@@ -214,18 +183,45 @@ export class Browser {
 
       let defaultWait = isAddOn ? 750 : 500;
 
-      const currentUrl = new URL(page.url());
+      // If we're still on about:blank, navigate to HA UI
+      if (page.url() == "about:blank") {
+        // Ensure we have tokens when we open the UI
+        const clientId = new URL("/", this.homeAssistantUrl).toString(); // http://homeassistant.local:8123/
+        const hassUrl = clientId.substring(0, clientId.length - 1); // http://homeassistant.local:8123
+        const evaluateIdentifier = await page.evaluateOnNewDocument(
+          (hassUrl, clientId, token, hassLocalStorage) => {
+            for (const [key, value] of Object.entries(hassLocalStorage)) {
+              localStorage.setItem(key, value);
+            }
+            localStorage.setItem(
+              "hassTokens",
+              JSON.stringify({
+                access_token: token,
+                token_type: "Bearer",
+                expires_in: 1800,
+                hassUrl,
+                clientId,
+                expires: 9999999999999,
+                refresh_token: "",
+              }),
+            );
+          },
+          hassUrl,
+          clientId,
+          this.token,
+          hassLocalStorageDefaults,
+        );
 
-      // If we're still on robots.txt, navigate to HA UI
-      if (currentUrl.pathname === "/robots.txt") {
+        // Open the HA UI
         const pageUrl = new URL(pagePath, this.homeAssistantUrl).toString();
         await page.goto(pageUrl);
+        page.removeScriptToEvaluateOnNewDocument(evaluateIdentifier.identifier);
 
         // Launching browser is slow inside the add-on, give it extra time
         if (isAddOn) {
           defaultWait += 2000;
         }
-      } else if (currentUrl.pathname !== pagePath) {
+      } else if (new URL(page.url()).pathname !== pagePath) {
         // mimick HA frontend navigation (no full reload)
         await page.evaluate((pagePath) => {
           history.replaceState(
@@ -242,8 +238,8 @@ export class Browser {
         defaultWait = 0;
       }
 
+      // Wait for the page to be loaded.
       try {
-        // Wait for the page to be loaded.
         await page.waitForFunction(
           () => {
             const haEl = document.querySelector("home-assistant");
