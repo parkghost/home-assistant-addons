@@ -52,16 +52,21 @@ if (isAddOn) {
 }
 
 export class Browser {
-  browser = undefined;
-  page = undefined;
-  lastAccess = new Date();
   TIMEOUT = 30_000; // 30s
 
   constructor(homeAssistantUrl, token) {
     this.homeAssistantUrl = homeAssistantUrl;
     this.token = token;
+    this.browser = undefined;
+    this.page = undefined;
+    this.lastAccess = new Date();
     this.busy = false;
     this.pending = [];
+
+    // The last path we requested a screenshot for
+    // We store this instead of using page.url() because panels can redirect
+    // users, ie / -> /lovelace/0.
+    this.lastRequestedPath = undefined;
   }
 
   async cleanup() {
@@ -75,6 +80,7 @@ export class Browser {
 
     this.busy = true;
     try {
+      this.lastRequestedPath = undefined;
       if (this.page) {
         await this.page.close();
         this.page = undefined;
@@ -184,7 +190,7 @@ export class Browser {
       let defaultWait = isAddOn ? 750 : 500;
 
       // If we're still on about:blank, navigate to HA UI
-      if (page.url() == "about:blank") {
+      if (this.lastRequestedPath === undefined) {
         // Ensure we have tokens when we open the UI
         const clientId = new URL("/", this.homeAssistantUrl).toString(); // http://homeassistant.local:8123/
         const hassUrl = clientId.substring(0, clientId.length - 1); // http://homeassistant.local:8123
@@ -221,7 +227,7 @@ export class Browser {
         if (isAddOn) {
           defaultWait += 2000;
         }
-      } else if (new URL(page.url()).pathname !== pagePath) {
+      } else if (this.lastRequestedPath !== pagePath) {
         // mimick HA frontend navigation (no full reload)
         await page.evaluate((pagePath) => {
           history.replaceState(
@@ -289,8 +295,12 @@ export class Browser {
 
       const end = Date.now();
       console.log(`Screenshot time: ${end - start} ms`);
-
+      this.lastRequestedPath = pagePath;
       return image;
+    } catch (err) {
+      // trigger a full page navigation on next request
+      this.lastRequestedPath = undefined;
+      throw err;
     } finally {
       this.lastAccess = new Date();
       this.busy = false;
