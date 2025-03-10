@@ -26,10 +26,8 @@ By default, on a cold start the server will wait for 2.5 extra seconds after the
 http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&wait=10000
 ```
 
-## Optimizations
+## Speed (or lack thereof)
 
-This add-on is slow. On a Home Assistant Green, on cold-start, it takes ~10s. The browser is kept alive for up to 30 seconds. While the browser is loaded, the response is returned in 5 seconds.
+This add-on is slow. On a Home Assistant Green, on cold-start, it takes ~10s. The browser is kept alive for up to 30 seconds.
 
-From this wait time, 1.5 seconds is a hardcoded sleep to ensure all cards are done loading. Maybe a URL param can be used to control this, or an event.
-
-The server is not thread-safe; which means it is unable to handle 2 requests at the same time. Contribution welcome.
+If the same page is requested, a screenshot is returned as fast as possible (0.6s on HA Green). If a different page is requested, it takes ~1.5s because it needs to navigate.
