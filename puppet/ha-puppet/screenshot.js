@@ -333,10 +333,22 @@ export class Browser {
 
       // Process image for e-ink if requested
       if (einkColors) {
-        let sharpInstance = sharp(image).png({ colours: einkColors });
-        if (einkColors === 2 && invert) {
-          sharpInstance = sharpInstance.negate();
+        let sharpInstance = sharp(image);
+
+        const pngOptions = {};
+
+        // Manually handle color conversion for 2 colors
+        if (einkColors === 2) {
+          sharpInstance = sharpInstance.threshold(220, {
+            greyscale: true,
+          });
+          if (invert) {
+            sharpInstance = sharpInstance.negate();
+          }
+        } else {
+          pngOptions.colours = einkColors;
         }
+        sharpInstance = sharpInstance.png(pngOptions);
         image = await sharpInstance.toBuffer();
       }
 
