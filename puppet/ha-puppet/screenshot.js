@@ -333,12 +333,11 @@ export class Browser {
 
       // Process image for e-ink if requested
       if (einkColors) {
-        console.log(`Reducing colors to ${einkColors}`);
-        let sharpInstance = sharp(image);
+        let sharpInstance = sharp(image).png({ colours: einkColors });
         if (einkColors === 2 && invert) {
           sharpInstance = sharpInstance.negate();
         }
-        image = await sharpInstance.png({ colours: einkColors }).toBuffer();
+        image = await sharpInstance.toBuffer();
       }
 
       const end = Date.now();
