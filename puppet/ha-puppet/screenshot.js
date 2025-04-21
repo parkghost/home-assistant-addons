@@ -189,9 +189,12 @@ export class Browser {
       }
 
       let defaultWait = isAddOn ? 750 : 500;
+      let openedNewPage = false;
 
       // If we're still on about:blank, navigate to HA UI
       if (this.lastRequestedPath === undefined) {
+        openedNewPage = true;
+
         // Ensure we have tokens when we open the UI
         const clientId = new URL("/", this.homeAssistantUrl).toString(); // http://homeassistant.local:8123/
         const hassUrl = clientId.substring(0, clientId.length - 1); // http://homeassistant.local:8123
@@ -249,6 +252,28 @@ export class Browser {
       }
 
       this.lastRequestedPath = pagePath;
+
+      // Dismiss any dashboard update avaiable toasts
+      if (
+        !openedNewPage &&
+        (await page.evaluate(() => {
+          const haEl = document.querySelector("home-assistant");
+          if (!haEl) return false;
+          const notifyEl = haEl.shadowRoot?.querySelector(
+            "notification-manager",
+          );
+          if (!notifyEl) return false;
+          const actionEl = notifyEl.shadowRoot.querySelector(
+            "ha-toast *[slot=action]",
+          );
+          if (!actionEl) return false;
+          actionEl.click();
+          return true;
+        }))
+      ) {
+        // If we dismissed a toast, let's wait a bit longer
+        defaultWait += 1000;
+      }
 
       // Wait for the page to be loaded.
       try {
