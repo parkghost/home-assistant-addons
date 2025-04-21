@@ -29,12 +29,18 @@ const handler = async (request, response, { browser }) => {
     return;
   }
 
+  let einkColors = parseInt(requestUrl.searchParams.get("eink"));
+  if (isNaN(einkColors) || einkColors < 2) {
+    einkColors = undefined;
+  }
+
   let image;
   try {
     image = await browser.screenshotHomeAssistant({
       pagePath: requestUrl.pathname,
       viewport: { width: viewportParams[0], height: viewportParams[1] },
       extraWait,
+      einkColors,
     });
   } catch (err) {
     console.error("Error generating screenshot", err);

@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer";
+import sharp from "sharp"; // Import sharp
 import { debug, isAddOn } from "./const.js";
 import { CannotOpenPageError } from "./error.js";
 
@@ -160,7 +161,7 @@ export class Browser {
     return this.page;
   }
 
-  async screenshotHomeAssistant({ pagePath, viewport, extraWait }) {
+  async screenshotHomeAssistant({ pagePath, viewport, extraWait, einkColors }) {
     let start = new Date();
     if (this.busy) {
       console.log("Busy, waiting in queue");
@@ -315,7 +316,7 @@ export class Browser {
         await new Promise((resolve) => setTimeout(resolve, extraWait));
       }
 
-      const image = await page.screenshot({
+      let image = await page.screenshot({
         clip: {
           x: 0,
           y: HEADER_HEIGHT,
@@ -323,6 +324,12 @@ export class Browser {
           height: viewport.height - HEADER_HEIGHT,
         },
       });
+
+      // Process image for e-ink if requested
+      if (einkColors) {
+        console.log(`Reducing colors to ${einkColors}`);
+        image = await sharp(image).png({ colours: einkColors }).toBuffer();
+      }
 
       const end = Date.now();
       console.log(`Screenshot time: ${end - start} ms`);

@@ -20,6 +20,12 @@ For example, to get a 1000px x 1000px screenshot of your default dashboard, fetc
 http://homeassistant.local:10000/lovelace/0?viewport=1000x1000
 ```
 
+To reduce the color palette for e-ink displays, you can add the `eink` parameter. The value represents the number of colors (including black) to use. For example, for a 2-color e-ink display:
+
+```
+http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&eink=2
+```
+
 By default, on a cold start the server will wait for 2.5 extra seconds after the loading is considered done, to give things that are not tracked by loading spinners to load (ie icons, pictures). When the browser is active, it waits 750ms. You can control this wait time by adding a `wait` query parameter. For example, to wait 10 seconds:
 
 ```
