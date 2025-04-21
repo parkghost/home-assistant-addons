@@ -161,7 +161,13 @@ export class Browser {
     return this.page;
   }
 
-  async screenshotHomeAssistant({ pagePath, viewport, extraWait, einkColors }) {
+  async screenshotHomeAssistant({
+    pagePath,
+    viewport,
+    extraWait,
+    einkColors,
+    invert,
+  }) {
     let start = new Date();
     if (this.busy) {
       console.log("Busy, waiting in queue");
@@ -328,7 +334,11 @@ export class Browser {
       // Process image for e-ink if requested
       if (einkColors) {
         console.log(`Reducing colors to ${einkColors}`);
-        image = await sharp(image).png({ colours: einkColors }).toBuffer();
+        let sharpInstance = sharp(image);
+        if (einkColors === 2 && invert) {
+          sharpInstance = sharpInstance.negate();
+        }
+        image = await sharpInstance.png({ colours: einkColors }).toBuffer();
       }
 
       const end = Date.now();

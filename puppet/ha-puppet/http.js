@@ -34,6 +34,8 @@ const handler = async (request, response, { browser }) => {
     einkColors = undefined;
   }
 
+  const invert = requestUrl.searchParams.has("invert");
+
   let image;
   try {
     image = await browser.screenshotHomeAssistant({
@@ -41,6 +43,7 @@ const handler = async (request, response, { browser }) => {
       viewport: { width: viewportParams[0], height: viewportParams[1] },
       extraWait,
       einkColors,
+      invert,
     });
   } catch (err) {
     console.error("Error generating screenshot", err);
