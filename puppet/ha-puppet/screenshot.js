@@ -341,7 +341,9 @@ export class Browser {
             greyscale: true,
           });
           if (invert) {
-            sharpInstance = sharpInstance.negate();
+            sharpInstance = sharpInstance.negate({
+              alpha: false,
+            });
           }
         }
         image = await sharpInstance
