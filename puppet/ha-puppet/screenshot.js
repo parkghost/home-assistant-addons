@@ -335,8 +335,6 @@ export class Browser {
       if (einkColors) {
         let sharpInstance = sharp(image);
 
-        const pngOptions = {};
-
         // Manually handle color conversion for 2 colors
         if (einkColors === 2) {
           sharpInstance = sharpInstance.threshold(220, {
@@ -345,11 +343,12 @@ export class Browser {
           if (invert) {
             sharpInstance = sharpInstance.negate();
           }
-        } else {
-          pngOptions.colours = einkColors;
         }
-        sharpInstance = sharpInstance.png(pngOptions);
-        image = await sharpInstance.toBuffer();
+        image = await sharpInstance
+          .png({
+            colours: einkColors,
+          })
+          .toBuffer();
       }
 
       const end = Date.now();
