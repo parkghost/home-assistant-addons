@@ -167,6 +167,7 @@ export class Browser {
     extraWait,
     einkColors,
     invert,
+    zoom,
   }) {
     let start = new Date();
     if (this.busy) {
@@ -183,7 +184,8 @@ export class Browser {
 
       // We add 56px to the height to account for the header
       // We'll cut that off from the screenshot
-      viewport.height += HEADER_HEIGHT;
+      const headerHeight = Math.round(HEADER_HEIGHT * zoom);
+      viewport.height += headerHeight;
 
       const curViewport = page.viewport();
 
@@ -263,7 +265,10 @@ export class Browser {
       // Dismiss any dashboard update avaiable toasts
       if (
         !openedNewPage &&
-        (await page.evaluate(() => {
+        (await page.evaluate((zoomLevel) => {
+          // Set zoom level
+          document.body.style.zoom = zoomLevel;
+
           const haEl = document.querySelector("home-assistant");
           if (!haEl) return false;
           const notifyEl = haEl.shadowRoot?.querySelector(
@@ -276,10 +281,15 @@ export class Browser {
           if (!actionEl) return false;
           actionEl.click();
           return true;
-        }))
+        }, zoom))
       ) {
         // If we dismissed a toast, let's wait a bit longer
         defaultWait += 1000;
+      } else {
+        // Set zoom level
+        await page.evaluate((zoomLevel) => {
+          document.body.style.zoom = zoomLevel;
+        }, zoom);
       }
 
       // Wait for the page to be loaded.
@@ -325,9 +335,9 @@ export class Browser {
       let image = await page.screenshot({
         clip: {
           x: 0,
-          y: HEADER_HEIGHT,
+          y: headerHeight,
           width: viewport.width,
-          height: viewport.height - HEADER_HEIGHT,
+          height: viewport.height - headerHeight,
         },
       });
 

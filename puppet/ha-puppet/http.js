@@ -34,6 +34,11 @@ const handler = async (request, response, { browser }) => {
     einkColors = undefined;
   }
 
+  let zoom = parseFloat(requestUrl.searchParams.get("zoom"));
+  if (isNaN(zoom) || zoom <= 0) {
+    zoom = 1;
+  }
+
   const invert = requestUrl.searchParams.has("invert");
 
   let image;
@@ -44,6 +49,7 @@ const handler = async (request, response, { browser }) => {
       extraWait,
       einkColors,
       invert,
+      zoom,
     });
   } catch (err) {
     console.error("Error generating screenshot", err);
