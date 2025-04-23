@@ -46,6 +46,11 @@ const handler = async (request, response, { browser }) => {
     format = "png";
   }
 
+  let rotate = parseInt(requestUrl.searchParams.get("rotate"));
+  if (isNaN(rotate) || ![90, 180, 270].includes(rotate)) {
+    rotate = undefined;
+  }
+
   let image;
   try {
     image = await browser.screenshotHomeAssistant({
@@ -55,7 +60,8 @@ const handler = async (request, response, { browser }) => {
       einkColors,
       invert,
       zoom,
-      format, // Pass format
+      format,
+      rotate,
     });
   } catch (err) {
     console.error("Error generating screenshot", err);

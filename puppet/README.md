@@ -62,6 +62,12 @@ http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&format=webp
 
 **Note:** If the `eink` parameter is specified, the output format will always be PNG, regardless of the `format` parameter.
 
+You can rotate the screenshot by adding the `rotate` query parameter. Valid values are 90, 180, and 270.
+
+```
+http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&rotate=90
+```
+
 ## Speed (or lack thereof)
 
 This add-on is slow. On a Home Assistant Green, on cold-start, it takes ~10s. The browser is kept alive for up to 30 seconds.

@@ -168,7 +168,8 @@ export class Browser {
     einkColors,
     invert,
     zoom,
-    format, // Add format parameter
+    format,
+    rotate,
   }) {
     let start = new Date();
     if (this.busy) {
@@ -347,27 +348,40 @@ export class Browser {
         },
       });
 
-      // Process image for e-ink if requested
-      if (einkColors) {
-        let sharpInstance = sharp(image);
+      let sharpInstance = sharp(image);
 
-        // Manually handle color conversion for 2 colors
-        if (einkColors === 2) {
-          sharpInstance = sharpInstance.threshold(220, {
-            greyscale: true,
-          });
-          if (invert) {
-            sharpInstance = sharpInstance.negate({
-              alpha: false,
-            });
-          }
-        }
-        image = await sharpInstance
-          .png({
-            colours: einkColors,
-          })
-          .toBuffer();
+      if (rotate) {
+        sharpInstance = sharpInstance.rotate(rotate);
       }
+
+      // Manually handle color conversion for 2 colors
+      if (einkColors === 2) {
+        sharpInstance = sharpInstance.threshold(220, {
+          greyscale: true,
+        });
+        if (invert) {
+          sharpInstance = sharpInstance.negate({
+            alpha: false,
+          });
+        }
+      }
+
+      // If eink processing was requested, output PNG with specified colors
+      if (einkColors) {
+        sharpInstance = sharpInstance.png({
+          colours: einkColors,
+        });
+      }
+      // Otherwise, output in the requested format
+      else if (format === "jpeg") {
+        sharpInstance = sharpInstance.jpeg();
+      } else if (format === "webp") {
+        sharpInstance = sharpInstance.webp();
+      } else {
+        sharpInstance = sharpInstance.png();
+      }
+
+      image = await sharpInstance.toBuffer();
 
       const end = Date.now();
       console.log(`Screenshot time: ${end - start} ms`);
