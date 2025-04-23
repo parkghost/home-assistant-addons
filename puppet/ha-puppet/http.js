@@ -41,6 +41,11 @@ const handler = async (request, response, { browser }) => {
 
   const invert = requestUrl.searchParams.has("invert");
 
+  let format = requestUrl.searchParams.get("format") || "png";
+  if (!["png", "jpeg", "webp"].includes(format)) {
+    format = "png";
+  }
+
   let image;
   try {
     image = await browser.screenshotHomeAssistant({
@@ -50,6 +55,7 @@ const handler = async (request, response, { browser }) => {
       einkColors,
       invert,
       zoom,
+      format, // Pass format
     });
   } catch (err) {
     console.error("Error generating screenshot", err);
@@ -58,8 +64,19 @@ const handler = async (request, response, { browser }) => {
     return;
   }
 
+  // If eink processing happened, the format is always png
+  const responseFormat = einkColors ? "png" : format;
+  let contentType;
+  if (responseFormat === "jpeg") {
+    contentType = "image/jpeg";
+  } else if (responseFormat === "webp") {
+    contentType = "image/webp";
+  } else {
+    contentType = "image/png";
+  }
+
   response.writeHead(200, {
-    "Content-Type": "image/png",
+    "Content-Type": contentType,
     "Content-Length": image.length,
   });
   response.write(image);

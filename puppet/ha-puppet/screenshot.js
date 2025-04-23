@@ -168,6 +168,7 @@ export class Browser {
     einkColors,
     invert,
     zoom,
+    format, // Add format parameter
   }) {
     let start = new Date();
     if (this.busy) {
@@ -332,7 +333,12 @@ export class Browser {
         await new Promise((resolve) => setTimeout(resolve, extraWait));
       }
 
+      // If eink processing is requested, we need PNG input for sharp.
+      // Otherwise, use the requested format.
+      const screenshotType = einkColors ? "png" : format;
+
       let image = await page.screenshot({
+        type: screenshotType,
         clip: {
           x: 0,
           y: headerHeight,

@@ -44,6 +44,24 @@ You can control the zoom level of the page using the `zoom` query parameter. The
 http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&zoom=1.3
 ```
 
+By default, the output format is PNG. You can request a BMP image by adding the `format=bmp` query parameter:
+
+```
+http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&format=bmp
+```
+
+By default, the output format is PNG. You can request a JPEG or WebP image by adding the `format=jpeg` or `format=webp` query parameter:
+
+```
+http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&format=jpeg
+```
+
+```
+http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&format=webp
+```
+
+**Note:** If the `eink` parameter is specified, the output format will always be PNG, regardless of the `format` parameter.
+
 ## Speed (or lack thereof)
 
 This add-on is slow. On a Home Assistant Green, on cold-start, it takes ~10s. The browser is kept alive for up to 30 seconds.
