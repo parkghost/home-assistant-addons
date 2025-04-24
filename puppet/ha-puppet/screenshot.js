@@ -1,5 +1,6 @@
 import puppeteer from "puppeteer";
 import sharp from "sharp"; // Import sharp
+import { BMPEncoder } from "./bmp.js";
 import { debug, isAddOn, chromiumExecutable } from "./const.js";
 import { CannotOpenPageError } from "./error.js";
 
@@ -334,7 +335,7 @@ export class Browser {
 
       // If eink processing is requested, we need PNG input for sharp.
       // Otherwise, use the requested format.
-      const screenshotType = einkColors ? "png" : format;
+      const screenshotType = (einkColors || format == "bmp") ? "png" : format;
 
       let image = await page.screenshot({
         type: screenshotType,
@@ -366,20 +367,46 @@ export class Browser {
 
       // If eink processing was requested, output PNG with specified colors
       if (einkColors) {
-        sharpInstance = sharpInstance.png({
-          colours: einkColors,
-        });
+        if (format == "bmp") {
+          if (einkColors === 2) {
+            sharpInstance = sharpInstance.toColourspace("b-w");
+          }
+          sharpInstance = sharpInstance.raw();
+
+          const {data, info } = await sharpInstance.toBuffer({ resolveWithObject: true });
+          let bitsPerPixel = 8;
+          if (einkColors === 2) {
+            bitsPerPixel = 1;
+          } else if (einkColors === 4) {
+            bitsPerPixel = 2;
+          } else if (einkColors === 16) {
+            bitsPerPixel = 4;
+          }
+          const bmpEncoder = new BMPEncoder(info.width, info.height, bitsPerPixel);
+          image = bmpEncoder.encode(data);
+        } else {
+          sharpInstance = sharpInstance.png({
+            colours: einkColors,
+          });
+          image = await sharpInstance.toBuffer();
+        }
       }
       // Otherwise, output in the requested format
       else if (format === "jpeg") {
         sharpInstance = sharpInstance.jpeg();
+        image = await sharpInstance.toBuffer();
       } else if (format === "webp") {
         sharpInstance = sharpInstance.webp();
+        image = await sharpInstance.toBuffer();
+      } else if (format === "bmp") {
+        sharpInstance = sharpInstance.raw();
+        const {data, info } = await sharpInstance.toBuffer({ resolveWithObject: true });
+        const bmpEncoder = new BMPEncoder(info.width, info.height, 24);
+        image = bmpEncoder.encode(data);
       } else {
         sharpInstance = sharpInstance.png();
+        image = await sharpInstance.toBuffer();
       }
-
-      image = await sharpInstance.toBuffer();
 
       const end = Date.now();
       console.log(`Screenshot time: ${end - start} ms`);

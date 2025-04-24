@@ -42,7 +42,7 @@ const handler = async (request, response, { browser }) => {
   const invert = requestUrl.searchParams.has("invert");
 
   let format = requestUrl.searchParams.get("format") || "png";
-  if (!["png", "jpeg", "webp"].includes(format)) {
+  if (!["png", "jpeg", "webp", "bmp"].includes(format)) {
     format = "png";
   }
 
@@ -70,13 +70,15 @@ const handler = async (request, response, { browser }) => {
     return;
   }
 
-  // If eink processing happened, the format is always png
-  const responseFormat = einkColors ? "png" : format;
+  // If eink processing happened, the format could be png or bmp
+  const responseFormat = (einkColors && format !== "bmp") ? "png" : format;
   let contentType;
   if (responseFormat === "jpeg") {
     contentType = "image/jpeg";
   } else if (responseFormat === "webp") {
     contentType = "image/webp";
+  } else if (responseFormat === "bmp") {
+    contentType = "image/bmp";
   } else {
     contentType = "image/png";
   }
