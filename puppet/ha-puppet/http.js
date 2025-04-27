@@ -8,6 +8,7 @@ class RequestHandler {
     this.browser = browser;
     this.busy = false;
     this.pending = [];
+    this.requestCount = 0;
   }
 
   async handleRequest(request, response) {
@@ -17,18 +18,21 @@ class RequestHandler {
       return;
     }
 
+    const requestId = ++this.requestCount;
+    console.debug(requestId, "Request", request.url);
+
     let start = new Date();
     if (this.busy) {
-      console.log("Busy, waiting in queue");
+      console.log(requestId, "Busy, waiting in queue");
       await new Promise((resolve) => this.pending.push(resolve));
       const end = Date.now();
-      console.log(`Wait time: ${end - start} ms`);
+      console.log(requestId, `Wait time: ${end - start} ms`);
     }
     start = new Date();
     this.busy = true;
 
     try {
-      console.debug("Handling", request.url);
+      console.debug(requestId, "Handling", request.url);
       const requestUrl = new URL(
         request.url,
         // We don't use this, but we need full URL for parsing.
@@ -73,20 +77,27 @@ class RequestHandler {
         rotate = undefined;
       }
 
+      const requestParams = {
+        pagePath: requestUrl.pathname,
+        viewport: { width: viewportParams[0], height: viewportParams[1] },
+        extraWait,
+        einkColors,
+        invert,
+        zoom,
+        format,
+        rotate,
+      };
       let image;
       try {
-        image = await this.browser.screenshotHomeAssistant({
-          pagePath: requestUrl.pathname,
-          viewport: { width: viewportParams[0], height: viewportParams[1] },
-          extraWait,
-          einkColors,
-          invert,
-          zoom,
-          format,
-          rotate,
-        });
+        const navigateResult = await this.browser.navigatePage(requestParams);
+        console.debug(requestId, `Navigated in ${navigateResult.time} ms`);
+        const screenshotResult = await this.browser.screenshotPage(
+          requestParams,
+        );
+        console.debug(requestId, `Screenshot in ${screenshotResult.time} ms`);
+        image = screenshotResult.image;
       } catch (err) {
-        console.error("Error generating screenshot", err);
+        console.error(requestId, "Error generating screenshot", err);
         response.statusCode =
           err instanceof CannotOpenPageError ? err.status : 500;
         response.end();

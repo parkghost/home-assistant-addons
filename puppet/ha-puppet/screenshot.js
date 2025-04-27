@@ -3,6 +3,7 @@ import sharp from "sharp"; // Import sharp
 import { BMPEncoder } from "./bmp.js";
 import { debug, isAddOn, chromiumExecutable } from "./const.js";
 import { CannotOpenPageError } from "./error.js";
+import { time } from "node:console";
 
 const HEADER_HEIGHT = 56;
 
@@ -159,29 +160,20 @@ export class Browser {
     return this.page;
   }
 
-  async screenshotHomeAssistant({
-    pagePath,
-    viewport,
-    extraWait,
-    einkColors,
-    invert,
-    zoom,
-    format,
-    rotate,
-  }) {
+  async navigatePage({ pagePath, viewport, extraWait, zoom }) {
     let start = new Date();
     if (this.busy) {
       throw new Error("Browser is busy");
     }
     start = new Date();
     this.busy = true;
+    const headerHeight = Math.round(HEADER_HEIGHT * zoom);
 
     try {
       const page = await this.getPage();
 
       // We add 56px to the height to account for the header
       // We'll cut that off from the screenshot
-      const headerHeight = Math.round(HEADER_HEIGHT * zoom);
       viewport.height += headerHeight;
 
       const curViewport = page.viewport();
@@ -329,6 +321,26 @@ export class Browser {
         await new Promise((resolve) => setTimeout(resolve, extraWait));
       }
 
+      const end = Date.now();
+      return { time: end - start };
+    } finally {
+      this.lastAccess = new Date();
+      this.busy = false;
+    }
+  }
+
+  async screenshotPage({ viewport, einkColors, invert, zoom, format, rotate }) {
+    let start = new Date();
+    if (this.busy) {
+      throw new Error("Browser is busy");
+    }
+    start = new Date();
+    this.busy = true;
+    const headerHeight = Math.round(HEADER_HEIGHT * zoom);
+
+    try {
+      const page = await this.getPage();
+
       // If eink processing is requested, we need PNG input for sharp.
       // Otherwise, use the requested format.
       const screenshotType = einkColors || format == "bmp" ? "png" : format;
@@ -413,8 +425,10 @@ export class Browser {
       }
 
       const end = Date.now();
-      console.log(`Screenshot time: ${end - start} ms`);
-      return image;
+      return {
+        image,
+        time: end - start,
+      };
     } catch (err) {
       // trigger a full page navigation on next request
       this.lastRequestedPath = undefined;
