@@ -64,7 +64,6 @@ export class Browser {
     this.page = undefined;
     this.lastAccess = new Date();
     this.busy = false;
-    this.pending = [];
 
     // The last path we requested a screenshot for
     // We store this instead of using page.url() because panels can redirect
@@ -172,10 +171,7 @@ export class Browser {
   }) {
     let start = new Date();
     if (this.busy) {
-      console.log("Busy, waiting in queue");
-      await new Promise((resolve) => this.pending.push(resolve));
-      const end = Date.now();
-      console.log(`Wait time: ${end - start} ms`);
+      throw new Error("Browser is busy");
     }
     start = new Date();
     this.busy = true;
@@ -335,7 +331,7 @@ export class Browser {
 
       // If eink processing is requested, we need PNG input for sharp.
       // Otherwise, use the requested format.
-      const screenshotType = (einkColors || format == "bmp") ? "png" : format;
+      const screenshotType = einkColors || format == "bmp" ? "png" : format;
 
       let image = await page.screenshot({
         type: screenshotType,
@@ -373,7 +369,9 @@ export class Browser {
           }
           sharpInstance = sharpInstance.raw();
 
-          const {data, info } = await sharpInstance.toBuffer({ resolveWithObject: true });
+          const { data, info } = await sharpInstance.toBuffer({
+            resolveWithObject: true,
+          });
           let bitsPerPixel = 8;
           if (einkColors === 2) {
             bitsPerPixel = 1;
@@ -382,7 +380,11 @@ export class Browser {
           } else if (einkColors === 16) {
             bitsPerPixel = 4;
           }
-          const bmpEncoder = new BMPEncoder(info.width, info.height, bitsPerPixel);
+          const bmpEncoder = new BMPEncoder(
+            info.width,
+            info.height,
+            bitsPerPixel,
+          );
           image = bmpEncoder.encode(data);
         } else {
           sharpInstance = sharpInstance.png({
@@ -400,7 +402,9 @@ export class Browser {
         image = await sharpInstance.toBuffer();
       } else if (format === "bmp") {
         sharpInstance = sharpInstance.raw();
-        const {data, info } = await sharpInstance.toBuffer({ resolveWithObject: true });
+        const { data, info } = await sharpInstance.toBuffer({
+          resolveWithObject: true,
+        });
         const bmpEncoder = new BMPEncoder(info.width, info.height, 24);
         image = bmpEncoder.encode(data);
       } else {
@@ -418,10 +422,6 @@ export class Browser {
     } finally {
       this.lastAccess = new Date();
       this.busy = false;
-      const resolve = this.pending.shift();
-      if (resolve) {
-        resolve();
-      }
     }
   }
 }
