@@ -20,6 +20,8 @@ For example, to get a 1000px x 1000px screenshot of your default dashboard, fetc
 http://homeassistant.local:10000/lovelace/0?viewport=1000x1000
 ```
 
+### e-ink displays
+
 To reduce the color palette for e-ink displays, you can add the `eink` parameter. The value represents the number of colors (including black) to use. For example, for a 2-color e-ink display:
 
 ```
@@ -31,6 +33,8 @@ If you are using `eink=2`, you can also invert the colors by adding the `invert`
 ```
 http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&eink=2&invert
 ```
+
+### Finish loading detection
 
 By default, on a cold start the server will wait for 2.5 extra seconds after the loading is considered done, to give things that are not tracked by loading spinners to load (ie icons, pictures). When the browser is active, it waits 750ms. You can control this wait time by adding a `wait` query parameter. For example, to wait 10 seconds:
 
@@ -44,13 +48,9 @@ You can control the zoom level of the page using the `zoom` query parameter. The
 http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&zoom=1.3
 ```
 
-By default, the output format is PNG. You can request a BMP image by adding the `format=bmp` query parameter:
+### Output formats
 
-```
-http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&format=bmp
-```
-
-By default, the output format is PNG. You can request a JPEG or WebP image by adding the `format=jpeg` or `format=webp` query parameter:
+By default, the output format is PNG. You can request a JPEG, WebP or BMP image by adding the `format=jpeg`, `format=webp`, `format=bmp` query parameter:
 
 ```
 http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&format=jpeg
@@ -60,13 +60,31 @@ http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&format=jpeg
 http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&format=webp
 ```
 
-**Note:** If the `eink` parameter is specified, the output format will always be PNG, regardless of the `format` parameter.
+```
+http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&format=bmp
+```
+
+**Note:** If the `eink` parameter is specified, the output format is limited to BMP and PNG.
+
+### Rotate screenshot
 
 You can rotate the screenshot by adding the `rotate` query parameter. Valid values are 90, 180, and 270.
 
 ```
 http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&rotate=90
 ```
+
+### Preloading requests
+
+To improve performance for subsequent requests, you can schedule the browser to navigate to the desired page ahead of time using the `next` parameter. Provide the number of seconds when you expect the *next* screenshot request to occur. The add-on will attempt to navigate the browser to the specified path 10 seconds *before* this timestamp.
+
+```
+# Example how the browser will warm up so it's ready to take a screenshot
+# in 300 seconds.
+http://homeassistant.local:10000/lovelace/0?next=300
+```
+
+Providing a `next` parameter will not affect the current request. It will only be used for the next request.
 
 ## Speed (or lack thereof)
 

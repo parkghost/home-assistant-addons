@@ -3,12 +3,18 @@ import { Browser } from "./screenshot.js";
 import { isAddOn, hassUrl, hassToken } from "./const.js";
 import { CannotOpenPageError } from "./error.js";
 
+// Seconds to warm up before a next request is expected
+const WARMUP_BEFORE_NEXT = 10; // seconds
+// Maximum number of next requests to keep in memory
+const MAX_NEXT_REQUESTS = 100;
+
 class RequestHandler {
   constructor(browser) {
     this.browser = browser;
     this.busy = false;
     this.pending = [];
     this.requestCount = 0;
+    this.nextRequests = [];
   }
 
   async handleRequest(request, response) {
@@ -21,14 +27,13 @@ class RequestHandler {
     const requestId = ++this.requestCount;
     console.debug(requestId, "Request", request.url);
 
-    let start = new Date();
+    const start = new Date();
     if (this.busy) {
       console.log(requestId, "Busy, waiting in queue");
       await new Promise((resolve) => this.pending.push(resolve));
       const end = Date.now();
       console.log(requestId, `Wait time: ${end - start} ms`);
     }
-    start = new Date();
     this.busy = true;
 
     try {
@@ -87,6 +92,14 @@ class RequestHandler {
         format,
         rotate,
       };
+
+      // Extract next param and schedule if necessary
+      const nextParam = requestUrl.searchParams.get("next");
+      let next = parseInt(nextParam);
+      if (isNaN(next) || next < 0) {
+        next = undefined;
+      }
+
       let image;
       try {
         const navigateResult = await this.browser.navigatePage(requestParams);
@@ -123,6 +136,56 @@ class RequestHandler {
       });
       response.write(image);
       response.end();
+
+      if (!next || next <= WARMUP_BEFORE_NEXT) {
+        return;
+      }
+
+      next -= WARMUP_BEFORE_NEXT;
+
+      // Adjust next based on time it took to process the request
+      const end = new Date();
+      const requestTime = end.getTime() - start.getTime();
+      const nextWaitTime = next * 1000 - requestTime;
+      if (nextWaitTime < 0) {
+        return;
+      }
+      console.debug(requestId, `Next request in ${nextWaitTime} ms`);
+      this.nextRequests.push(
+        setTimeout(
+          () => this.prepareNextRequest(requestId, requestParams),
+          nextWaitTime,
+        ),
+      );
+      if (this.nextRequests.length > MAX_NEXT_REQUESTS) {
+        clearTimeout(this.nextRequests.shift());
+      }
+    } finally {
+      this.busy = false;
+      const resolve = this.pending.shift();
+      if (resolve) {
+        resolve();
+      }
+    }
+  }
+
+  async prepareNextRequest(requestId, requestParams) {
+    if (this.busy) {
+      console.log("Busy, skipping next request");
+      return;
+    }
+    requestId = `${requestId}-next`;
+    this.busy = true;
+    console.log(requestId, "Preparing next request");
+    try {
+      const navigateResult = await this.browser.navigatePage({
+        ...requestParams,
+        // No unnecessary wait time, as we're just warming up
+        extraWait: 0,
+      });
+      console.debug(requestId, `Navigated in ${navigateResult.time} ms`);
+    } catch (err) {
+      console.error(requestId, "Error preparing next request", err);
     } finally {
       this.busy = false;
       const resolve = this.pending.shift();
