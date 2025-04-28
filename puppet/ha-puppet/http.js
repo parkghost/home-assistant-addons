@@ -3,8 +3,6 @@ import { Browser } from "./screenshot.js";
 import { isAddOn, hassUrl, hassToken } from "./const.js";
 import { CannotOpenPageError } from "./error.js";
 
-// Seconds to warm up before a next request is expected
-const WARMUP_BEFORE_NEXT = 10; // seconds
 // Maximum number of next requests to keep in memory
 const MAX_NEXT_REQUESTS = 100;
 
@@ -12,9 +10,18 @@ class RequestHandler {
   constructor(browser) {
     this.browser = browser;
     this.busy = false;
+
+    // Pending web requests
     this.pending = [];
+
+    // Request counter to identify requests
     this.requestCount = 0;
+
+    // Timeout identifiers for next requests
     this.nextRequests = [];
+
+    // Time it takes to navigate to a page
+    this.navigationTime = 0;
   }
 
   async handleRequest(request, response) {
@@ -107,6 +114,10 @@ class RequestHandler {
       try {
         const navigateResult = await this.browser.navigatePage(requestParams);
         console.debug(requestId, `Navigated in ${navigateResult.time} ms`);
+        this.navigationTime = Math.max(
+          this.navigationTime,
+          navigateResult.time,
+        );
         const screenshotResult = await this.browser.screenshotPage(
           requestParams,
         );
@@ -140,16 +151,22 @@ class RequestHandler {
       response.write(image);
       response.end();
 
-      if (!next || next <= WARMUP_BEFORE_NEXT) {
+      if (!next) {
         return;
       }
-
-      next -= WARMUP_BEFORE_NEXT;
 
       // Adjust next based on time it took to process the request
       const end = new Date();
       const requestTime = end.getTime() - start.getTime();
-      const nextWaitTime = next * 1000 - requestTime;
+      const nextWaitTime =
+        // Convert to milliseconds
+        next * 1000 -
+        // We calculate next from the start of the request
+        requestTime -
+        // Start a bit earlier to account for the time browser warms up
+        this.navigationTime -
+        1000;
+
       if (nextWaitTime < 0) {
         return;
       }
