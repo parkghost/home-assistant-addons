@@ -82,6 +82,8 @@ class RequestHandler {
         rotate = undefined;
       }
 
+      const lang = requestUrl.searchParams.get("lang") || undefined; // Get lang param
+
       const requestParams = {
         pagePath: requestUrl.pathname,
         viewport: { width: viewportParams[0], height: viewportParams[1] },
@@ -91,6 +93,7 @@ class RequestHandler {
         zoom,
         format,
         rotate,
+        lang,
       };
 
       // Extract next param and schedule if necessary

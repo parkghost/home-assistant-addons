@@ -3,7 +3,6 @@ import sharp from "sharp"; // Import sharp
 import { BMPEncoder } from "./bmp.js";
 import { debug, isAddOn, chromiumExecutable } from "./const.js";
 import { CannotOpenPageError } from "./error.js";
-import { time } from "node:console";
 
 const HEADER_HEIGHT = 56;
 
@@ -70,6 +69,7 @@ export class Browser {
     // We store this instead of using page.url() because panels can redirect
     // users, ie / -> /lovelace/0.
     this.lastRequestedPath = undefined;
+    this.lastRequestedLang = undefined;
   }
 
   async cleanup() {
@@ -84,6 +84,7 @@ export class Browser {
     this.busy = true;
     try {
       this.lastRequestedPath = undefined;
+      this.lastRequestedLang = undefined;
       if (this.page) {
         await this.page.close();
         this.page = undefined;
@@ -160,7 +161,7 @@ export class Browser {
     return this.page;
   }
 
-  async navigatePage({ pagePath, viewport, extraWait, zoom }) {
+  async navigatePage({ pagePath, viewport, extraWait, zoom, lang }) {
     let start = new Date();
     if (this.busy) {
       throw new Error("Browser is busy");
@@ -196,28 +197,25 @@ export class Browser {
         // Ensure we have tokens when we open the UI
         const clientId = new URL("/", this.homeAssistantUrl).toString(); // http://homeassistant.local:8123/
         const hassUrl = clientId.substring(0, clientId.length - 1); // http://homeassistant.local:8123
+        const browserLocalStorage = {
+          ...hassLocalStorageDefaults,
+          hassTokens: JSON.stringify({
+            access_token: this.token,
+            token_type: "Bearer",
+            expires_in: 1800,
+            hassUrl,
+            clientId,
+            expires: 9999999999999,
+            refresh_token: "",
+          }),
+        };
         const evaluateIdentifier = await page.evaluateOnNewDocument(
-          (hassUrl, clientId, token, hassLocalStorage) => {
+          (hassLocalStorage) => {
             for (const [key, value] of Object.entries(hassLocalStorage)) {
               localStorage.setItem(key, value);
             }
-            localStorage.setItem(
-              "hassTokens",
-              JSON.stringify({
-                access_token: token,
-                token_type: "Bearer",
-                expires_in: 1800,
-                hassUrl,
-                clientId,
-                expires: 9999999999999,
-                refresh_token: "",
-              }),
-            );
           },
-          hassUrl,
-          clientId,
-          this.token,
-          hassLocalStorageDefaults,
+          browserLocalStorage,
         );
 
         // Open the HA UI
@@ -310,6 +308,20 @@ export class Browser {
         );
       } catch (err) {
         console.log("Timeout waiting for HA to finish loading");
+      }
+
+      // Update language
+      // Should really be done via localStorage.selectedLanguage
+      // but that doesn't seem to work
+      if (lang && lang !== this.lastRequestedLang) {
+        await page.evaluate((newLang) => {
+          document
+            .querySelector("home-assistant")
+            ._selectLanguage(newLang, false);
+        }, lang);
+        this.lastRequestedLang = lang;
+        // Add extra wait time if language changed, as UI might reload/re-render
+        defaultWait += 1000;
       }
 
       // wait for the work to be done.

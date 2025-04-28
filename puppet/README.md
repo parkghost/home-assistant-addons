@@ -74,6 +74,14 @@ You can rotate the screenshot by adding the `rotate` query parameter. Valid valu
 http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&rotate=90
 ```
 
+### Set Language
+
+You can set the language of the Home Assistant interface for the screenshot by adding the `lang` query parameter. The value should be a language code that Home Assistant supports (e.g., `en`, `nl`, `de`).
+
+```
+http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&lang=nl
+```
+
 ### Preloading requests
 
 To improve performance for subsequent requests, you can schedule the browser to navigate to the desired page ahead of time using the `next` parameter. Provide the number of seconds when you expect the *next* screenshot request to occur. The add-on will attempt to navigate the browser to the specified path 10 seconds *before* this timestamp.
