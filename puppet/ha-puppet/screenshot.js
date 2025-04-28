@@ -81,22 +81,19 @@ export class Browser {
       return;
     }
 
-    this.busy = true;
-    try {
-      this.lastRequestedPath = undefined;
-      this.lastRequestedLang = undefined;
-      if (this.page) {
-        await this.page.close();
-        this.page = undefined;
-      }
-      if (this.browser) {
-        await this.browser.close();
-        this.browser = undefined;
-      }
-      console.log("Closed browser");
-    } finally {
-      this.busy = false;
+    const { browser, page } = this;
+    this.page = undefined;
+    this.browser = undefined;
+    this.lastRequestedPath = undefined;
+    this.lastRequestedLang = undefined;
+
+    if (page) {
+      await page.close();
     }
+    if (browser) {
+      await browser.close();
+    }
+    console.log("Closed browser");
   }
 
   async getPage() {
