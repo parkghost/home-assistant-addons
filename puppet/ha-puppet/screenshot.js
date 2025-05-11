@@ -67,6 +67,7 @@ export class Browser {
     // users, ie / -> /lovelace/0.
     this.lastRequestedPath = undefined;
     this.lastRequestedLang = undefined;
+    this.lastRequestedTheme = undefined;
   }
 
   async cleanup() {
@@ -80,6 +81,7 @@ export class Browser {
     this.browser = undefined;
     this.lastRequestedPath = undefined;
     this.lastRequestedLang = undefined;
+    this.lastRequestedTheme = undefined;
 
     try {
       if (page) {
@@ -161,7 +163,7 @@ export class Browser {
     return this.page;
   }
 
-  async navigatePage({ pagePath, viewport, extraWait, zoom, lang }) {
+  async navigatePage({ pagePath, viewport, extraWait, zoom, lang, theme }) {
     let start = new Date();
     if (this.busy) {
       throw new Error("Browser is busy");
@@ -313,15 +315,29 @@ export class Browser {
       // Update language
       // Should really be done via localStorage.selectedLanguage
       // but that doesn't seem to work
-      if (lang && lang !== this.lastRequestedLang) {
+      if (lang !== this.lastRequestedLang) {
         await page.evaluate((newLang) => {
           document
             .querySelector("home-assistant")
             ._selectLanguage(newLang, false);
-        }, lang);
+        }, lang || "en");
         this.lastRequestedLang = lang;
-        // Add extra wait time if language changed, as UI might reload/re-render
         defaultWait += 1000;
+      }
+
+      // Update theme
+      if (theme !== this.lastRequestedTheme) {
+        await page.evaluate((theme) => {
+          localStorage.selectedTheme = JSON.stringify(theme);
+          // @ts-ignore
+          document
+            .querySelector("home-assistant")
+            .dispatchEvent(
+              new CustomEvent("settheme", { detail: { theme: theme || "" } }),
+            );
+        }, theme);
+        this.lastRequestedTheme = theme;
+        defaultWait += 500;
       }
 
       // wait for the work to be done.

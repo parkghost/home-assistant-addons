@@ -122,7 +122,8 @@ class RequestHandler {
         rotate = undefined;
       }
 
-      const lang = requestUrl.searchParams.get("lang") || undefined; // Get lang param
+      const lang = requestUrl.searchParams.get("lang") || undefined;
+      const theme = requestUrl.searchParams.get("theme") || undefined;
 
       const requestParams = {
         pagePath: requestUrl.pathname,
@@ -134,6 +135,7 @@ class RequestHandler {
         format,
         rotate,
         lang,
+        theme,
       };
 
       // Extract next param and schedule if necessary
