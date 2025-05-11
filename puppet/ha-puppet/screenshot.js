@@ -55,14 +55,11 @@ if (isAddOn) {
 }
 
 export class Browser {
-  TIMEOUT = 30_000; // 30s
-
   constructor(homeAssistantUrl, token) {
     this.homeAssistantUrl = homeAssistantUrl;
     this.token = token;
     this.browser = undefined;
     this.page = undefined;
-    this.lastAccess = new Date();
     this.busy = false;
 
     // The last path we requested a screenshot for
@@ -73,26 +70,33 @@ export class Browser {
   }
 
   async cleanup() {
-    const diff = this.busy ? 0 : new Date() - this.lastAccess;
+    const { browser, page } = this;
 
-    // instance was used since scheduling cleanup, postpone
-    if (diff < this.TIMEOUT) {
-      setTimeout(() => this.cleanup(), this.TIMEOUT - diff + 1000);
+    if (!this.browser && !this.page) {
       return;
     }
 
-    const { browser, page } = this;
     this.page = undefined;
     this.browser = undefined;
     this.lastRequestedPath = undefined;
     this.lastRequestedLang = undefined;
 
-    if (page) {
-      await page.close();
+    try {
+      if (page) {
+        await page.close();
+      }
+    } catch (err) {
+      console.error("Error closing page during cleanup:", err);
     }
-    if (browser) {
-      await browser.close();
+
+    try {
+      if (browser) {
+        await browser.close();
+      }
+    } catch (err) {
+      console.error("Error closing browser during cleanup:", err);
     }
+
     console.log("Closed browser");
   }
 
@@ -111,7 +115,6 @@ export class Browser {
         executablePath: chromiumExecutable,
         args: puppeteerArgs,
       });
-      setTimeout(() => this.cleanup(), this.TIMEOUT);
       page = await browser.newPage();
 
       // Route all log messages from browser to our add-on log
@@ -333,7 +336,6 @@ export class Browser {
       const end = Date.now();
       return { time: end - start };
     } finally {
-      this.lastAccess = new Date();
       this.busy = false;
     }
   }
@@ -443,7 +445,6 @@ export class Browser {
       this.lastRequestedPath = undefined;
       throw err;
     } finally {
-      this.lastAccess = new Date();
       this.busy = false;
     }
   }

@@ -5,6 +5,7 @@ import { CannotOpenPageError } from "./error.js";
 
 // Maximum number of next requests to keep in memory
 const MAX_NEXT_REQUESTS = 100;
+const BROWSER_TIMEOUT = 30_000; // Timeout for browser inactivity in milliseconds
 
 class RequestHandler {
   constructor(browser) {
@@ -22,6 +23,38 @@ class RequestHandler {
 
     // Time it takes to navigate to a page
     this.navigationTime = 0;
+
+    // Last time the browser was accessed
+    this.lastAccess = new Date();
+  }
+
+  _runBrowserCleanupCheck = async () => {
+    if (this.busy) {
+      return;
+    }
+
+    const idleTime = Date.now() - this.lastAccess.getTime();
+
+    if (idleTime < BROWSER_TIMEOUT) {
+      // Not time to clean up yet. Reschedule for the remaining time.
+      const remainingTime = BROWSER_TIMEOUT - idleTime;
+      this.browserCleanupTimer = setTimeout(
+        this._runBrowserCleanupCheck,
+        remainingTime + 100,
+      );
+      return;
+    }
+
+    await this.browser.cleanup();
+  };
+
+  _markBrowserAccessed() {
+    clearTimeout(this.browserCleanupTimer);
+    this.lastAccess = new Date();
+    this.browserCleanupTimer = setTimeout(
+      this._runBrowserCleanupCheck,
+      BROWSER_TIMEOUT + 100,
+    );
   }
 
   async handleRequest(request, response) {
@@ -186,6 +219,7 @@ class RequestHandler {
       if (resolve) {
         resolve();
       }
+      this._markBrowserAccessed();
     }
   }
 
@@ -212,6 +246,7 @@ class RequestHandler {
       if (resolve) {
         resolve();
       }
+      this._markBrowserAccessed();
     }
   }
 }
