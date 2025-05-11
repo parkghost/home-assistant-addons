@@ -90,6 +90,14 @@ You can set the theme of the Home Assistant interface for the screenshot by addi
 http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&theme=my-custom-theme
 ```
 
+### Set Dark Mode
+
+You can enable dark mode for the screenshot by adding the `dark` query parameter. This parameter doesn't require a value.
+
+```
+http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&dark
+```
+
 ### Preloading requests
 
 To improve performance for subsequent requests, you can schedule the browser to navigate to the desired page ahead of time using the `next` parameter. Provide the number of seconds when you expect the *next* screenshot request to occur. The add-on will attempt to navigate the browser to the specified path 10 seconds *before* this timestamp.

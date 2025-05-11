@@ -68,6 +68,7 @@ export class Browser {
     this.lastRequestedPath = undefined;
     this.lastRequestedLang = undefined;
     this.lastRequestedTheme = undefined;
+    this.lastRequestedDarkMode = undefined;
   }
 
   async cleanup() {
@@ -82,6 +83,7 @@ export class Browser {
     this.lastRequestedPath = undefined;
     this.lastRequestedLang = undefined;
     this.lastRequestedTheme = undefined;
+    this.lastRequestedDarkMode = undefined;
 
     try {
       if (page) {
@@ -163,7 +165,15 @@ export class Browser {
     return this.page;
   }
 
-  async navigatePage({ pagePath, viewport, extraWait, zoom, lang, theme }) {
+  async navigatePage({
+    pagePath,
+    viewport,
+    extraWait,
+    zoom,
+    lang,
+    theme,
+    dark,
+  }) {
     let start = new Date();
     if (this.busy) {
       throw new Error("Browser is busy");
@@ -325,18 +335,23 @@ export class Browser {
         defaultWait += 1000;
       }
 
-      // Update theme
-      if (theme !== this.lastRequestedTheme) {
-        await page.evaluate((theme) => {
-          localStorage.selectedTheme = JSON.stringify(theme);
-          // @ts-ignore
-          document
-            .querySelector("home-assistant")
-            .dispatchEvent(
-              new CustomEvent("settheme", { detail: { theme: theme || "" } }),
+      // Update theme and dark mode
+      if (
+        theme !== this.lastRequestedTheme ||
+        dark !== this.lastRequestedDarkMode
+      ) {
+        await page.evaluate(
+          ({ theme, dark }) => {
+            document.querySelector("home-assistant").dispatchEvent(
+              new CustomEvent("settheme", {
+                detail: { theme, dark },
+              }),
             );
-        }, theme);
+          },
+          { theme: theme || "", dark },
+        );
         this.lastRequestedTheme = theme;
+        this.lastRequestedDarkMode = dark;
         defaultWait += 500;
       }
 
