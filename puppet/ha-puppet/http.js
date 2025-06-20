@@ -1,6 +1,6 @@
 import http from "node:http";
 import { Browser } from "./screenshot.js";
-import { isAddOn, hassUrl, hassToken } from "./const.js";
+import { isAddOn, hassUrl, hassToken, keepBrowserOpen } from "./const.js";
 import { CannotOpenPageError } from "./error.js";
 
 // Maximum number of next requests to keep in memory
@@ -51,6 +51,9 @@ class RequestHandler {
   _markBrowserAccessed() {
     clearTimeout(this.browserCleanupTimer);
     this.lastAccess = new Date();
+    if (keepBrowserOpen) {
+      return;
+    }
     this.browserCleanupTimer = setTimeout(
       this._runBrowserCleanupCheck,
       BROWSER_TIMEOUT + 100,
