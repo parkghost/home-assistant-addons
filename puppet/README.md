@@ -34,6 +34,16 @@ If you are using `eink=2`, you can also invert the colors by adding the `invert`
 http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&eink=2&invert
 ```
 
+It's recommended to use an e-ink theme like [Graphite](https://github.com/TilmanGriesel/graphite?tab=readme-ov-file#e-ink-themes) to optimize readability.
+
+### Set Theme
+
+You can set the theme of the Home Assistant interface for the screenshot by adding the `theme` query parameter. The value should be a theme name that Home Assistant supports (e.g., `default`, `my-custom-theme`).
+
+```
+http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&theme=my-custom-theme
+```
+
 ### Finish loading detection
 
 By default, on a cold start the server will wait for 2.5 extra seconds after the loading is considered done, to give things that are not tracked by loading spinners to load (ie icons, pictures). When the browser is active, it waits 750ms. You can control this wait time by adding a `wait` query parameter. For example, to wait 10 seconds:
@@ -80,14 +90,6 @@ You can set the language of the Home Assistant interface for the screenshot by a
 
 ```
 http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&lang=nl
-```
-
-### Set Theme
-
-You can set the theme of the Home Assistant interface for the screenshot by adding the `theme` query parameter. The value should be a theme name that Home Assistant supports (e.g., `default`, `my-custom-theme`).
-
-```
-http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&theme=my-custom-theme
 ```
 
 ### Set Dark Mode
